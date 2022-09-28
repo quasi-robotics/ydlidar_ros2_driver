@@ -151,6 +151,7 @@ int main(int argc, char *argv[]) {
 
   float correction_offset = node->declare_parameter<float>("correction_offset", 0.0);
   float correction_ratio = node->declare_parameter<float>("correction_ratio", 1.0);
+  float correction_angle = node->declare_parameter<float>("correction_angle", 0.0);
 
 
   bool ret = laser.initialize();
@@ -195,8 +196,8 @@ int main(int argc, char *argv[]) {
       scan_msg->header.stamp.sec = RCL_NS_TO_S(scan.stamp);
       scan_msg->header.stamp.nanosec =  scan.stamp - RCL_S_TO_NS(scan_msg->header.stamp.sec);
       scan_msg->header.frame_id = frame_id;
-      scan_msg->angle_min = scan.config.min_angle;
-      scan_msg->angle_max = scan.config.max_angle;
+      scan_msg->angle_min = scan.config.min_angle + correction_angle;
+      scan_msg->angle_max = scan.config.max_angle + correction_angle;
       scan_msg->angle_increment = scan.config.angle_increment;
       scan_msg->scan_time = scan.config.scan_time;
       scan_msg->time_increment = scan.config.time_increment;
