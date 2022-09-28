@@ -149,6 +149,9 @@ int main(int argc, char *argv[]) {
   node->declare_parameter<bool>("invalid_range_is_inf");
   node->get_parameter("invalid_range_is_inf", invalid_range_is_inf);
 
+  float correction_offset = node->declare_parameter<float>("correction_offset", 0.0);
+  float correction_ratio = node->declare_parameter<float>("correction_ratio", 1.0);
+
 
   bool ret = laser.initialize();
   if (ret) {
@@ -206,7 +209,7 @@ int main(int argc, char *argv[]) {
       for(size_t i=0; i < scan.points.size(); i++) {
         int index = std::ceil((scan.points[i].angle - scan.config.min_angle)/scan.config.angle_increment);
         if(index >=0 && index < size) {
-          scan_msg->ranges[index] = scan.points[i].range;
+          scan_msg->ranges[index] = scan.points[i].range * correction_ratio + correction_offset;
           scan_msg->intensities[index] = scan.points[i].intensity;
         }
       }
