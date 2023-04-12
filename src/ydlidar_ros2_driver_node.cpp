@@ -24,6 +24,8 @@
 #include "rclcpp/time_source.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "std_srvs/srv/empty.hpp"
+#include "diagnostic_msgs/msg/diagnostic_status.hpp"
+#include "diagnostic_updater/diagnostic_updater.hpp"
 #include <vector>
 #include <iostream>
 #include <string>
@@ -160,6 +162,17 @@ int main(int argc, char *argv[]) {
   } else {
     RCLCPP_ERROR(node->get_logger(), "%s\n", laser.DescribeError());
   }
+  
+  //Added diagnostic updater for lidar
+  diagnostic_updater::Updater updater(node);
+  updater.setHardwareID("Lidar");
+  updater.add("LaserScan", [&laser](diagnostic_updater::DiagnosticStatusWrapper &status) {
+      if (!laser.initialize()) {
+          status.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "LaserScan is not connected");
+          return;
+      }
+      status.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "LaserScan is connected");
+  });
   
   auto laser_pub = node->create_publisher<sensor_msgs::msg::LaserScan>("scan", rclcpp::SensorDataQoS());
 
