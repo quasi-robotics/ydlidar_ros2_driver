@@ -166,12 +166,19 @@ int main(int argc, char *argv[]) {
   //Added diagnostic updater for lidar
   diagnostic_updater::Updater updater(node);
   updater.setHardwareID("Lidar");
-  updater.add("LaserScan", [&laser](diagnostic_updater::DiagnosticStatusWrapper &status) {
-      if (!laser.initialize()) {
-          status.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "LaserScan is not connected");
+  updater.add("LaserScan", [&laser, frame_id, node](diagnostic_updater::DiagnosticStatusWrapper &status) {
+      auto driver_error = laser.getDriverError();
+      // RCLCPP_INFO(node->get_logger(), "Lidar %s checkHardware: %d, driverError: %d, error: %s", 
+      //   frame_id.c_str(), (int)laser.checkHardware(),
+      //   (int)driver_error, ydlidar::core::common::DriverInterface::DescribeDriverError(driver_error));
+      if (driver_error != NoError) {
+          status.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, 
+                         ydlidar::core::common::DriverInterface::DescribeDriverError(driver_error));
+          status.add(frame_id, "disconnected");
           return;
       }
       status.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "LaserScan is connected");
+      status.add(frame_id, "connected");
   });
   
   auto laser_pub = node->create_publisher<sensor_msgs::msg::LaserScan>("scan", rclcpp::SensorDataQoS());
