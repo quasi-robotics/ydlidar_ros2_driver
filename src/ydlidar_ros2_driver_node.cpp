@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 
   /// Intenstiy bit count
   optval = 8;
-  node->declare_parameter("intensity_bit");
+  node->declare_parameter<int>("intensity_bit");
   node->get_parameter("intensity_bit", optval);
   laser.setlidaropt(LidarPropIntenstiyBit, &optval, sizeof(int));
      
