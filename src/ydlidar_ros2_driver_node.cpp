@@ -161,6 +161,12 @@ int main(int argc, char *argv[]) {
   float correction_angle = node->declare_parameter<float>("correction_angle", 0.0);
 
 
+  std::vector<double> blackout_angles = node->declare_parameter<std::vector<double>>("blackout_angles", std::vector<double>());
+  if(blackout_angles.size() % 2 != 0) {
+    RCLCPP_ERROR(node->get_logger(), "number of values in blackout_angles parameter must be a multiple of 2");
+    return -1;
+  }
+
   bool ret = laser.initialize();
   if (ret) {
     ret = laser.turnOn();
@@ -233,12 +239,25 @@ int main(int argc, char *argv[]) {
       scan_msg->ranges.resize(size);
       scan_msg->intensities.resize(size);
       for(size_t i=0; i < scan.points.size(); i++) {
-        int index = std::ceil((scan.points[i].angle - scan.config.min_angle)/scan.config.angle_increment);
+        auto angle = scan.points[i].angle - scan.config.min_angle;
+        int index = std::ceil(angle/scan.config.angle_increment);
+        //RCLCPP_INFO_STREAM(node->get_logger(), "point " << i << ": Report angle " << scan.points[i].angle << ", adjusted angle " << angle << ", idx: " << index << ", intens: " << scan.points[i].intensity);
         if(index >=0 && index < size) {
-          scan_msg->ranges[index] = scan.points[i].range;
+          scan_msg->intensities[index] = scan.points[i].intensity;
+          bool skip = false;
+          for(size_t bai = 0; bai < blackout_angles.size(); bai += 2) {
+            if(angle >= blackout_angles[bai] && angle <= blackout_angles[bai+1]) {
+              RCLCPP_INFO_STREAM(node->get_logger(), "filtering out point " << i << ": Report angle " << scan.points[i].angle << ", adjusted angle " << angle << ", idx: " << index << ", intens: " << scan.points[i].intensity);
+              skip = true;
+              break;
+            }
+          }
+          if(skip)
+            scan_msg->ranges[index] = std::numeric_limits<double>::infinity();
+          else
+            scan_msg->ranges[index] = scan.points[i].range;
           if(std::isfinite(scan_msg->ranges[index]))
             scan_msg->ranges[index] = scan_msg->ranges[index] * correction_ratio + correction_offset;
-          scan_msg->intensities[index] = scan.points[i].intensity;
         }
       }
 
