@@ -241,13 +241,13 @@ int main(int argc, char *argv[]) {
       for(size_t i=0; i < scan.points.size(); i++) {
         auto angle = scan.points[i].angle - scan.config.min_angle;
         int index = std::ceil(angle/scan.config.angle_increment);
-        //RCLCPP_INFO_STREAM(node->get_logger(), "point " << i << ": Report angle " << scan.points[i].angle << ", adjusted angle " << angle << ", idx: " << index << ", intens: " << scan.points[i].intensity);
+        //RCLCPP_DEBUG_STREAM(node->get_logger(), "point " << i << ": Report angle " << scan.points[i].angle << ", adjusted angle " << angle << ", idx: " << index << ", intens: " << scan.points[i].intensity);
         if(index >=0 && index < size) {
           scan_msg->intensities[index] = scan.points[i].intensity;
           bool skip = false;
           for(size_t bai = 0; bai < blackout_angles.size(); bai += 2) {
             if(angle >= blackout_angles[bai] && angle <= blackout_angles[bai+1]) {
-              RCLCPP_INFO_STREAM(node->get_logger(), "filtering out point " << i << ": Report angle " << scan.points[i].angle << ", adjusted angle " << angle << ", idx: " << index << ", intens: " << scan.points[i].intensity);
+              //RCLCPP_DEBUG_STREAM(node->get_logger(), "filtering out point " << i << ": Report angle " << scan.points[i].angle << ", adjusted angle " << angle << ", idx: " << index << ", intens: " << scan.points[i].intensity);
               skip = true;
               break;
             }
