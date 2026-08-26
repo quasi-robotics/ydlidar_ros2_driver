@@ -17,6 +17,7 @@
 #include <math.h>
 #include <chrono>
 #include <iostream>
+#include <limits>
 #include <memory>
 
 #include "rclcpp/clock.hpp"
@@ -254,10 +255,14 @@ int main(int argc, char *argv[]) {
           }
           if(skip)
             scan_msg->ranges[index] = 0.0;
-          else
+          else if(invalid_range_is_inf && scan.points[i].range == 0.0)
+            //the SDK reports invalid/out of range readings as 0.0
+            scan_msg->ranges[index] = std::numeric_limits<float>::infinity();
+          else {
             scan_msg->ranges[index] = scan.points[i].range;
-          if(std::isfinite(scan_msg->ranges[index]))
-            scan_msg->ranges[index] = scan_msg->ranges[index] * correction_ratio + correction_offset;
+            if(std::isfinite(scan_msg->ranges[index]))
+              scan_msg->ranges[index] = scan_msg->ranges[index] * correction_ratio + correction_offset;
+          }
         }
       }
 
