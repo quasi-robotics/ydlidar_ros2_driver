@@ -253,7 +253,7 @@ int main(int argc, char *argv[]) {
             }
           }
           if(skip)
-            scan_msg->ranges[index] = std::numeric_limits<double>::infinity();
+            scan_msg->ranges[index] = 0.0;
           else
             scan_msg->ranges[index] = scan.points[i].range;
           if(std::isfinite(scan_msg->ranges[index]))
