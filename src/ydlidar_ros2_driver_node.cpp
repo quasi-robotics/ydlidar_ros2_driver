@@ -14,6 +14,7 @@
 #endif
 
 #include "src/CYdLidar.h"
+#include <core/common/ydlidar_help.h>
 #include <math.h>
 #include <chrono>
 #include <iostream>
@@ -33,6 +34,37 @@
 #include <signal.h>
 
 #define ROS2Verision "1.0.1"
+
+/// Default maximum range (m) of a lidar model, used when the `range_max`
+/// parameter is not given. Values are taken from this package's per-model
+/// parameter files in params/; unknown models fall back to the SDK default.
+static float getDefaultMaxRange(int model) {
+  using ydlidar::core::common::DriverInterface;
+
+  switch (model) {
+    case DriverInterface::YDLIDAR_GS2:
+      return 1.f;
+    case DriverInterface::YDLIDAR_X4:
+    case DriverInterface::YDLIDAR_TminiPRO:
+      return 12.f;
+    case DriverInterface::YDLIDAR_TG15:
+      return 15.f;
+    case DriverInterface::YDLIDAR_G1:
+    case DriverInterface::YDLIDAR_G2A:
+    case DriverInterface::YDLIDAR_G2B:
+    case DriverInterface::YDLIDAR_G2C:
+      return 16.f;
+    case DriverInterface::YDLIDAR_G6:
+      return 25.f;
+    case DriverInterface::YDLIDAR_TG30:
+      return 30.f;
+    case DriverInterface::YDLIDAR_TG50:
+    case DriverInterface::YDLIDAR_TEA:
+      return 50.f;
+    default:
+      return 64.f;
+  }
+}
 
 
 int main(int argc, char *argv[]) {
@@ -139,10 +171,11 @@ int main(int argc, char *argv[]) {
   node->get_parameter("angle_min", f_optvalue);
   laser.setlidaropt(LidarPropMinAngle, &f_optvalue, sizeof(float));
   /// unit: m
-  f_optvalue = 64.f;
-  node->declare_parameter<float>("range_max");
-  node->get_parameter("range_max", f_optvalue);
-  laser.setlidaropt(LidarPropMaxRange, &f_optvalue, sizeof(float));
+  /// when unset, the default of the detected lidar model is used (see below)
+  float range_max = node->declare_parameter<float>("range_max", 0.f);
+  if (range_max > 0.f) {
+    laser.setlidaropt(LidarPropMaxRange, &range_max, sizeof(float));
+  }
   f_optvalue = 0.1f;
   node->declare_parameter<float>("range_min");
   node->get_parameter("range_min", f_optvalue);
@@ -170,6 +203,19 @@ int main(int argc, char *argv[]) {
 
   bool ret = laser.initialize();
   if (ret) {
+    if (range_max <= 0.f) {
+      device_info di;
+      int model = ydlidar::core::common::DriverInterface::YDLIDAR_None;
+      if (laser.getDeviceInfo(di, EPT_All)) {
+        model = di.model;
+      } else {
+        RCLCPP_WARN(node->get_logger(), "Failed to get lidar device info, using default range_max");
+      }
+      range_max = getDefaultMaxRange(model);
+      laser.setlidaropt(LidarPropMaxRange, &range_max, sizeof(float));
+      RCLCPP_INFO(node->get_logger(), "Lidar model %s, range_max set to %.1f m",
+                  ydlidar::core::common::lidarModelToString(model).c_str(), range_max);
+    }
     ret = laser.turnOn();
   } else {
     RCLCPP_ERROR(node->get_logger(), "%s\n", laser.DescribeError());
