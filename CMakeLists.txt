@@ -44,17 +44,12 @@ add_executable(${PROJECT_NAME}_node
 #---------------------------------------------------------------------------------------
 # link libraries
 #--------------------------------------------------------------------------------------
-ament_target_dependencies(${PROJECT_NAME}_node
-    "rclcpp"
-    "sensor_msgs"
-    "visualization_msgs"
-    "geometry_msgs"
-    "std_srvs"
-    "diagnostic_updater"
-    "diagnostic_msgs"
-    )
-
 target_link_libraries(${PROJECT_NAME}_node
+    rclcpp::rclcpp
+    ${sensor_msgs_TARGETS}
+    ${std_srvs_TARGETS}
+    ${diagnostic_msgs_TARGETS}
+    diagnostic_updater::diagnostic_updater
     ${YDLIDAR_SDK_LIBRARIES})
 
 #---------------------------------------------------------------------------------------
@@ -65,15 +60,9 @@ add_executable(${PROJECT_NAME}_client
 #---------------------------------------------------------------------------------------
 # link libraries
 #--------------------------------------------------------------------------------------
-ament_target_dependencies(${PROJECT_NAME}_client
-    "rclcpp"
-    "sensor_msgs"
-    "visualization_msgs"
-    "geometry_msgs"
-    "std_srvs"
-    "diagnostic_updater"
-    "diagnostic_msgs"
-    )
+target_link_libraries(${PROJECT_NAME}_client
+    rclcpp::rclcpp
+    ${sensor_msgs_TARGETS})
 
 #---------------------------------------------------------------------------------------
 # Install
